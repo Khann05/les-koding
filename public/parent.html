@@ -76,6 +76,7 @@ const nowDate = new Date();
 let currentMonth = nowDate.getFullYear() < START_YEAR || (nowDate.getFullYear() === START_YEAR && nowDate.getMonth() < START_MONTH) ? START_MONTH : nowDate.getMonth();
 let currentYear = nowDate.getFullYear() < START_YEAR || (nowDate.getFullYear() === START_YEAR && nowDate.getMonth() < START_MONTH) ? START_YEAR : nowDate.getFullYear();
 let currentStudent = null;
+let parentPPTSortMode = "smart";
 
 function getEl(id){ return document.getElementById(id); }
 function safe(v){ return String(v || "").replace(/[&<>"]/g, function(m){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]; }); }
@@ -194,7 +195,18 @@ function getUploadOrder(item){
 }
 
 function sortParentMaterials(items){
-  return (Array.isArray(items) ? items.slice() : []).sort(function(a,b){
+  const arr = Array.isArray(items) ? items.slice() : [];
+
+  // Sort All: parent melihat semua PPT urut dari pertama upload sampai terakhir.
+  // Locked tidak otomatis turun ke bawah.
+  if(parentPPTSortMode === "all"){
+    return arr.sort(function(a,b){
+      return getUploadOrder(a) - getUploadOrder(b);
+    });
+  }
+
+  // Default: unlocked di atas, locked otomatis ke bawah, masing-masing tetap urut upload.
+  return arr.sort(function(a,b){
     const aLocked = a.is_unlocked ? 0 : 1;
     const bLocked = b.is_unlocked ? 0 : 1;
     if(aLocked !== bLocked) return aLocked - bLocked;
@@ -250,6 +262,14 @@ function groupByCategory(items){
     groups[cat].push(item);
   });
   return groups;
+}
+
+
+function setParentPPTSortMode(mode){
+  parentPPTSortMode = mode === "all" ? "all" : "smart";
+  if(currentStudent){
+    renderParent(currentStudent);
+  }
 }
 
 function renderParent(){

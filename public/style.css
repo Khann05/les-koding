@@ -944,3 +944,19 @@ body{
     height:140px;
   }
 }
+
+.parent-sort-head{
+  align-items:center;
+  gap:14px;
+}
+.parent-sort-head .row-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+@media(max-width:760px){
+  .parent-sort-head{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+}
