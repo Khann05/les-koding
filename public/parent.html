@@ -197,15 +197,12 @@ function getUploadOrder(item){
 function sortParentMaterials(items){
   const arr = Array.isArray(items) ? items.slice() : [];
 
-  // Sort All: parent melihat semua PPT urut dari pertama upload sampai terakhir.
-  // Locked tidak otomatis turun ke bawah.
   if(parentPPTSortMode === "all"){
     return arr.sort(function(a,b){
       return getUploadOrder(a) - getUploadOrder(b);
     });
   }
 
-  // Default: unlocked di atas, locked otomatis ke bawah, masing-masing tetap urut upload.
   return arr.sort(function(a,b){
     const aLocked = a.is_unlocked ? 0 : 1;
     const bLocked = b.is_unlocked ? 0 : 1;
@@ -345,13 +342,26 @@ function renderParent(){
 }
 
 function renderMaterials(materials){
+  const controls =
+    '<div class="panel-head parent-sort-head" style="margin-bottom:16px">' +
+      '<div>' +
+        '<div class="title">Semua PPT / Materi</div>' +
+        '<div class="subtitle">Default: file terbuka di atas, locked di bawah. Sort All: urut upload asli.</div>' +
+      '</div>' +
+      '<div class="row-actions">' +
+        '<button class="btn ' + (parentPPTSortMode === "smart" ? "btn-primary" : "btn-light") + '" onclick="setParentPPTSortMode(\\'smart\\')">Default</button>' +
+        '<button class="btn ' + (parentPPTSortMode === "all" ? "btn-primary" : "btn-light") + '" onclick="setParentPPTSortMode(\\'all\\')">Sort All</button>' +
+      '</div>' +
+    '</div>';
+
   if(!materials.length){
-    getEl("materialList").innerHTML = '<div class="empty">Belum ada PPT di library.</div>';
+    getEl("materialList").innerHTML = controls + '<div class="empty">Belum ada PPT di library.</div>';
     return;
   }
 
-  const groups = groupByCategory(materials);
-  let html = "";
+  const sorted = sortParentMaterials(materials);
+  const groups = groupByCategory(sorted);
+  let html = controls;
 
   Object.keys(groups).forEach(function(cat){
     html += `<div class="title" style="margin:16px 0 10px">${safe(cat)}</div><div class="file-grid">`;
