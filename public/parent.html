@@ -342,6 +342,9 @@ function renderParent(){
 }
 
 function renderMaterials(materials){
+  const smartClass = parentPPTSortMode === "smart" ? "btn-primary" : "btn-light";
+  const allClass = parentPPTSortMode === "all" ? "btn-primary" : "btn-light";
+
   const controls =
     '<div class="panel-head parent-sort-head" style="margin-bottom:16px">' +
       '<div>' +
@@ -349,8 +352,8 @@ function renderMaterials(materials){
         '<div class="subtitle">Default: file terbuka di atas, locked di bawah. Sort All: urut upload asli.</div>' +
       '</div>' +
       '<div class="row-actions">' +
-        '<button class="btn ' + (parentPPTSortMode === "smart" ? "btn-primary" : "btn-light") + '" onclick="setParentPPTSortMode(\\'smart\\')">Default</button>' +
-        '<button class="btn ' + (parentPPTSortMode === "all" ? "btn-primary" : "btn-light") + '" onclick="setParentPPTSortMode(\\'all\\')">Sort All</button>' +
+        '<button class="btn ' + smartClass + '" onclick="setParentPPTSortMode(&quot;smart&quot;)">Default</button>' +
+        '<button class="btn ' + allClass + '" onclick="setParentPPTSortMode(&quot;all&quot;)">Sort All</button>' +
       '</div>' +
     '</div>';
 
