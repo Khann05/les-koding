@@ -70,7 +70,7 @@ async function getFullStudent(id) {
       COALESCE(ma.is_unlocked, 0) AS is_unlocked
     FROM library_materials lm
     LEFT JOIN material_access ma ON ma.material_id = lm.id AND ma.student_id = ?
-    ORDER BY lm.category ASC, lm.created_at DESC
+    ORDER BY lm.id ASC
   `, [id]);
 
   return { ...student, attendances, certificates, library };
@@ -202,7 +202,7 @@ app.delete("/api/admin/attendance/:id", requireAdmin, async (req, res) => {
 
 app.get("/api/admin/library", requireAdmin, async (req, res) => {
   try {
-    const rows = await all("SELECT * FROM library_materials ORDER BY category ASC, created_at DESC");
+    const rows = await all("SELECT * FROM library_materials ORDER BY id ASC");
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -226,7 +226,7 @@ app.post("/api/admin/library", requireAdmin, multiUpload, async (req, res) => {
       [title || main.name || "Materi", category || "Beginner", note, main.name, main.path, main.type, cover.name, cover.path, cover.type]
     );
 
-    res.json({ ok: true, id: result.id, library: await all("SELECT * FROM library_materials ORDER BY category ASC, created_at DESC") });
+    res.json({ ok: true, id: result.id, library: await all("SELECT * FROM library_materials ORDER BY id ASC") });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -235,7 +235,7 @@ app.post("/api/admin/library", requireAdmin, multiUpload, async (req, res) => {
 app.delete("/api/admin/library/:id", requireAdmin, async (req, res) => {
   try {
     await run("DELETE FROM library_materials WHERE id = ?", [req.params.id]);
-    res.json({ ok: true, library: await all("SELECT * FROM library_materials ORDER BY category ASC, created_at DESC") });
+    res.json({ ok: true, library: await all("SELECT * FROM library_materials ORDER BY id ASC") });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -14,7 +14,7 @@
     <p class="subtitle">Masukkan kode untuk melihat progress anak. Semua PPT terlihat, tapi yang locked belum bisa didownload.</p>
     <div style="margin-top:18px">
       <label>Kode Akses</label>
-      <input id="parentCode" class="field" placeholder="Contoh: KolimNT001"/>
+      <input id="parentCode" class="field" placeholder="Contoh: ANDI123"/>
     </div>
     <div class="modal-actions"><button class="btn btn-primary" onclick="loginParent()">Masuk</button></div>
   
@@ -188,6 +188,19 @@ function progressBoxParent(){
   `;
 }
 
+
+function getUploadOrder(item){
+  return Number(item.id || item.library_id || item.material_id || 0);
+}
+
+function sortParentMaterials(items){
+  return (Array.isArray(items) ? items.slice() : []).sort(function(a,b){
+    const aLocked = a.is_unlocked ? 0 : 1;
+    const bLocked = b.is_unlocked ? 0 : 1;
+    if(aLocked !== bLocked) return aLocked - bLocked;
+    return getUploadOrder(a) - getUploadOrder(b);
+  });
+}
 
 function coverHTML(item, locked){
   let content = "";

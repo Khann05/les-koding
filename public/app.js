@@ -12,6 +12,7 @@ let editingId = null;
 let selectedDate = "2026-05-01";
 let activeTab = "calendar";
 let library = [];
+let pptSortMode = "smart";
 
 const currentDate = new Date();
 let currentMonth = currentDate.getFullYear() < START_YEAR || (currentDate.getFullYear() === START_YEAR && currentDate.getMonth() < START_MONTH) ? START_MONTH : currentDate.getMonth();
@@ -382,20 +383,14 @@ function sendWA(){
   const totalPertemuan = selectedStudent.attendances ? selectedStudent.attendances.length : 0;
 
   const message =
-  "Halo...\n\n" +
-  "Berikut update perkembangan les coding untuk " + selectedStudent.name + ":\n\n" +
-  "- Level saat ini: " + (selectedStudent.level || "Beginner") + "\n" +
-  "- Total pertemuan: " + (selectedStudent.attendances ? selectedStudent.attendances.length : 0) + " / 4 sesi\n\n" +
-
-  "* Password / Kode Parent:\n" +
-  selectedStudent.parent_code + "\n\n" +
-
-  "Untuk melihat progress lengkap, materi, dan informasi lainnya, silakan kunjungi Parent Portal berikut:\n\n" +
-
-  "https://kolimntcode.up.railway.app/parent.html\n\n" +
-
-  "Terima kasih...\n" +
-  "";
+    "Halo\n\n" +
+    "Berikut update perkembangan les coding untuk " + selectedStudent.name + ":\n\n" +
+    "Level saat ini: " + (selectedStudent.level || "Beginner") + "\n" +
+    "Total pertemuan: " + totalPertemuan + " / 4 sesi\n\n" +
+    "Password / Kode Parent: " + (selectedStudent.parent_code || "-") + "\n\n" +
+    "Untuk melihat progress lengkap, materi, dan informasi lainnya, silakan kunjungi Parent Portal berikut:\n\n" +
+    "https://kolimntcode.up.railway.app/parent.html\n\n" +
+    "Terima kasih";
 
   window.open("https://wa.me/" + digits(selectedStudent.phone) + "?text=" + encodeURIComponent(message), "_blank");
 }
@@ -705,15 +700,61 @@ function groupByCategory(items){
   return groups;
 }
 
+
+function getUploadOrder(item){
+  return Number(item.id || item.library_id || item.material_id || 0);
+}
+
+function sortPPTItems(items){
+  const arr = Array.isArray(items) ? items.slice() : [];
+
+  if(pptSortMode === "all"){
+    return arr.sort(function(a,b){
+      return getUploadOrder(a) - getUploadOrder(b);
+    });
+  }
+
+  return arr.sort(function(a,b){
+    const aLocked = a.is_unlocked ? 0 : 1;
+    const bLocked = b.is_unlocked ? 0 : 1;
+
+    if(aLocked !== bLocked) return aLocked - bLocked;
+    return getUploadOrder(a) - getUploadOrder(b);
+  });
+}
+
+function sortLibraryItems(items){
+  return (Array.isArray(items) ? items.slice() : []).sort(function(a,b){
+    return getUploadOrder(a) - getUploadOrder(b);
+  });
+}
+
+function setPPTSortMode(mode){
+  pptSortMode = mode === "all" ? "all" : "smart";
+  renderDetail();
+}
+
+
 function renderAccess(){
-  const list = selectedStudent.library || [];
+  const list = sortPPTItems(selectedStudent.library || []);
   if(!list.length){
     $("tabContent").innerHTML = '<div class="empty">Library PPT masih kosong. Klik Upload PPT Global dulu.</div>';
     return;
   }
 
   const groups = groupByCategory(list);
-  let html = `<div class="panel-head"><div><div class="title">Unlock PPT untuk ${safe(selectedStudent.name)}</div><div class="subtitle">Semua PPT tampil di parent. Yang locked cover-nya jadi hitam putih/gelap dan tidak bisa download.</div></div></div>`;
+  let html = `
+    <div class="panel-head">
+      <div>
+        <div class="title">Unlock PPT untuk ${safe(selectedStudent.name)}</div>
+        <div class="subtitle">Default: file unlocked urut upload, locked otomatis ke bawah. Sort All: semua file urut upload asli, locked tidak dipindah.</div>
+      </div>
+      <div class="row-actions">
+        <button class="btn ${pptSortMode === "smart" ? "btn-primary" : "btn-light"}" onclick="setPPTSortMode('smart')">Default</button>
+        <button class="btn ${pptSortMode === "all" ? "btn-primary" : "btn-light"}" onclick="setPPTSortMode('all')">Sort All</button>
+      </div>
+    </div>
+  `;
 
   Object.keys(groups).forEach(function(cat){
     html += `<div class="title" style="margin:16px 0 10px">${safe(cat)}</div><div class="file-grid">`;
@@ -743,7 +784,7 @@ function renderLibrary(){
     return;
   }
 
-  const groups = groupByCategory(library);
+  const groups = groupByCategory(sortLibraryItems(library));
   let html = `<div class="panel-head"><div><div class="title">Library PPT Global</div><div class="subtitle">Ini master PPT untuk semua siswa. Parent melihat semua list, tapi akses download per siswa diatur dari tab Unlock PPT Siswa.</div></div><button class="btn btn-green" onclick="openLibraryModal()">Upload PPT Global</button></div>`;
 
   Object.keys(groups).forEach(function(cat){
