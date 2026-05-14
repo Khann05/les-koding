@@ -378,16 +378,20 @@ async function selectStudent(id){
 
 function sendWA(){
   if(!selectedStudent) return;
+
+  const totalPertemuan = selectedStudent.attendances ? selectedStudent.attendances.length : 0;
+
   const message =
     "Halo 👋\n\n" +
     "Berikut update perkembangan les coding untuk " + selectedStudent.name + ":\n\n" +
     "📘 Level saat ini: " + (selectedStudent.level || "Beginner") + "\n" +
-    "📅 Total pertemuan: " + (selectedStudent.attendances?.length || 0) + " / 4 sesi\n\n" +
+    "📅 Total pertemuan: " + totalPertemuan + " / 4 sesi\n\n" +
     "Untuk melihat progress lengkap, materi, dan informasi lainnya, silakan kunjungi Parent Portal berikut:\n\n" +
     "https://kolimntcode.up.railway.app/parent.html\n\n" +
     "Terima kasih 🙏\n" +
-    "KOLIM NT CODE";  
-  window.open("https://wa.me/" + digits(selectedStudent.phone) + "?text=" + encodeURIComponent(text), "_blank");
+    "KOLIM NT CODE";
+
+  window.open("https://wa.me/" + digits(selectedStudent.phone) + "?text=" + encodeURIComponent(message), "_blank");
 }
 
 async function deleteSelectedStudent(){
