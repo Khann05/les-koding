@@ -382,14 +382,20 @@ function sendWA(){
   const totalPertemuan = selectedStudent.attendances ? selectedStudent.attendances.length : 0;
 
   const message =
-    "Halo 👋\n\n" +
-    "Berikut update perkembangan les coding untuk " + selectedStudent.name + ":\n\n" +
-    "📘 Level saat ini: " + (selectedStudent.level || "Beginner") + "\n" +
-    "📅 Total pertemuan: " + totalPertemuan + " / 4 sesi\n\n" +
-    "Untuk melihat progress lengkap, materi, dan informasi lainnya, silakan kunjungi Parent Portal berikut:\n\n" +
-    "https://kolimntcode.up.railway.app/parent.html\n\n" +
-    "Terima kasih 🙏\n" +
-    "KOLIM NT CODE";
+  "Halo 👋\n\n" +
+  "Berikut update perkembangan les coding untuk " + selectedStudent.name + ":\n\n" +
+  "📔 Level saat ini: " + (selectedStudent.level || "Beginner") + "\n" +
+  "🗓️ Total pertemuan: " + (selectedStudent.attendances ? selectedStudent.attendances.length : 0) + " / 4 sesi\n\n" +
+
+  "🔑 Password / Kode Parent:\n" +
+  selectedStudent.parent_code + "\n\n" +
+
+  "Untuk melihat progress lengkap, materi, dan informasi lainnya, silakan kunjungi Parent Portal berikut:\n\n" +
+
+  "https://kolimntcode.up.railway.app/parent.html\n\n" +
+
+  "Terima kasih 🙏\n" +
+  "KOLIM NT CODE";
 
   window.open("https://wa.me/" + digits(selectedStudent.phone) + "?text=" + encodeURIComponent(message), "_blank");
 }
