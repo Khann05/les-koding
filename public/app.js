@@ -395,7 +395,7 @@ function sendWA(){
   "https://kolimntcode.up.railway.app/parent.html\n\n" +
 
   "Terima kasih...\n" +
-  "KOLIM NT CODE";
+  "";
 
   window.open("https://wa.me/" + digits(selectedStudent.phone) + "?text=" + encodeURIComponent(message), "_blank");
 }
