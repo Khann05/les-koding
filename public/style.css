@@ -960,3 +960,32 @@ body{
     align-items:flex-start;
   }
 }
+
+.section-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:18px;
+  margin-bottom:16px;
+  padding:16px;
+  border:1px solid var(--line);
+  border-radius:24px;
+  background:linear-gradient(135deg,#fff,#fffbeb);
+}
+.section-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.category-title{margin:18px 0 10px}
+.compact-grid{animation:fadeUp .25s ease both}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(max-width:760px){
+  .section-toolbar{flex-direction:column;align-items:flex-start}
+  .section-actions{width:100%;justify-content:flex-start}
+}
