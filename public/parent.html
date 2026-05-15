@@ -52,18 +52,15 @@
     </section>
 
     <section class="panel" style="margin-bottom:22px">
-      <div class="panel-head"><div><div class="title">Semua PPT / Materi</div><div class="subtitle">Cover hitam putih berarti masih locked.</div></div></div>
       <div id="materialList"></div>
     </section>
 
     <section class="panel" style="margin-bottom:22px">
-      <div class="panel-head"><div><div class="title">Sertifikat Digital</div><div class="subtitle">Sertifikat tampil/download kalau sudah di-unlock.</div></div></div>
-      <div id="certificateList" class="file-grid"></div>
+      <div id="certificateList"></div>
     </section>
 
     <section class="panel">
-      <div class="panel-head"><div><div class="title">Riwayat Pertemuan</div><div class="subtitle">Daftar semua sesi les anak.</div></div></div>
-      <div id="attendanceList" class="file-grid"></div>
+      <div id="attendanceList"></div>
     </section>
   </section>
 </div>
@@ -77,6 +74,7 @@ let currentMonth = nowDate.getFullYear() < START_YEAR || (nowDate.getFullYear() 
 let currentYear = nowDate.getFullYear() < START_YEAR || (nowDate.getFullYear() === START_YEAR && nowDate.getMonth() < START_MONTH) ? START_YEAR : nowDate.getFullYear();
 let currentStudent = null;
 let parentPPTSortMode = "smart";
+let parentSectionExpanded = { materials:false, certificates:false, attendances:false };
 
 function getEl(id){ return document.getElementById(id); }
 function safe(v){ return String(v || "").replace(/[&<>"]/g, function(m){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]; }); }
@@ -269,6 +267,12 @@ function setParentPPTSortMode(mode){
   }
 }
 
+
+function toggleParentSection(section){
+  parentSectionExpanded[section] = !parentSectionExpanded[section];
+  renderParent();
+}
+
 function renderParent(){
   const s = currentStudent;
   const attendances = s.attendances || [];
@@ -344,30 +348,29 @@ function renderParent(){
 function renderMaterials(materials){
   const smartClass = parentPPTSortMode === "smart" ? "btn-primary" : "btn-light";
   const allClass = parentPPTSortMode === "all" ? "btn-primary" : "btn-light";
+  const sorted = sortParentMaterials(materials || []);
+  const expanded = !!parentSectionExpanded.materials;
+  const visible = expanded ? sorted : sorted.slice(0,4);
+  const hidden = Math.max(0, sorted.length - visible.length);
 
-  const controls =
-    '<div class="panel-head parent-sort-head" style="margin-bottom:16px">' +
-      '<div>' +
-        '<div class="title">Semua PPT / Materi</div>' +
-        '<div class="subtitle">Default: file terbuka di atas, locked di bawah. Sort All: urut upload asli.</div>' +
-      '</div>' +
-      '<div class="row-actions">' +
+  let html =
+    '<div class="section-toolbar">' +
+      '<div><div class="title">Semua PPT / Materi</div><div class="subtitle">Default: terbuka di atas, locked di bawah. Sort All: urut upload asli.</div></div>' +
+      '<div class="section-actions">' +
         '<button class="btn ' + smartClass + '" onclick="setParentPPTSortMode(&quot;smart&quot;)">Default</button>' +
         '<button class="btn ' + allClass + '" onclick="setParentPPTSortMode(&quot;all&quot;)">Sort All</button>' +
+        '<button class="btn btn-light" onclick="toggleParentSection(&quot;materials&quot;)">' + (expanded ? "Show Less" : "See All" + (hidden ? " (" + hidden + ")" : "")) + '</button>' +
       '</div>' +
     '</div>';
 
-  if(!materials.length){
-    getEl("materialList").innerHTML = controls + '<div class="empty">Belum ada PPT di library.</div>';
+  if(!sorted.length){
+    getEl("materialList").innerHTML = html + '<div class="empty">Belum ada PPT di library.</div>';
     return;
   }
 
-  const sorted = sortParentMaterials(materials);
-  const groups = groupByCategory(sorted);
-  let html = controls;
-
+  const groups = groupByCategory(visible);
   Object.keys(groups).forEach(function(cat){
-    html += `<div class="title" style="margin:16px 0 10px">${safe(cat)}</div><div class="file-grid">`;
+    html += `<div class="title category-title">${safe(cat)}</div><div class="file-grid compact-grid">`;
     html += groups[cat].map(function(item){
       const locked = !item.is_unlocked;
       return `
@@ -383,12 +386,28 @@ function renderMaterials(materials){
     }).join("");
     html += "</div>";
   });
-
   getEl("materialList").innerHTML = html;
 }
 
 function renderCertificates(certificates){
-  getEl("certificateList").innerHTML = certificates.length ? certificates.map(function(item){
+  const sorted = (certificates || []).slice().sort(function(a,b){ return Number(b.id || 0) - Number(a.id || 0); });
+  const expanded = !!parentSectionExpanded.certificates;
+  const visible = expanded ? sorted : sorted.slice(0,4);
+  const hidden = Math.max(0, sorted.length - visible.length);
+
+  let html =
+    '<div class="section-toolbar">' +
+      '<div><div class="title">Sertifikat Digital</div><div class="subtitle">Sertifikat tampil/download kalau sudah di-unlock.</div></div>' +
+      '<div class="section-actions"><button class="btn btn-light" onclick="toggleParentSection(&quot;certificates&quot;)">' + (expanded ? "Show Less" : "See All" + (hidden ? " (" + hidden + ")" : "")) + '</button></div>' +
+    '</div>';
+
+  if(!sorted.length){
+    getEl("certificateList").innerHTML = html + '<div class="empty">Belum ada sertifikat.</div>';
+    return;
+  }
+
+  html += '<div class="file-grid compact-grid">';
+  html += visible.map(function(item){
     const locked = !!item.is_locked;
     return `
       <div class="file-card">
@@ -400,32 +419,39 @@ function renderCertificates(certificates){
         </div>
       </div>
     `;
-  }).join("") : '<div class="empty">Belum ada sertifikat.</div>';
+  }).join("");
+  html += '</div>';
+  getEl("certificateList").innerHTML = html;
 }
 
 function renderAttendances(attendances){
-  getEl("attendanceList").innerHTML = attendances.length ? attendances.map(function(item){
+  const sorted = attendances || [];
+  const expanded = !!parentSectionExpanded.attendances;
+  const visible = expanded ? sorted : sorted.slice(0,4);
+  const hidden = Math.max(0, sorted.length - visible.length);
+
+  let html =
+    '<div class="section-toolbar">' +
+      '<div><div class="title">Riwayat Pertemuan</div><div class="subtitle">Daftar semua sesi les anak.</div></div>' +
+      '<div class="section-actions"><button class="btn btn-light" onclick="toggleParentSection(&quot;attendances&quot;)">' + (expanded ? "Show Less" : "See All" + (hidden ? " (" + hidden + ")" : "")) + '</button></div>' +
+    '</div>';
+
+  if(!sorted.length){
+    getEl("attendanceList").innerHTML = html + '<div class="empty">Belum ada riwayat pertemuan.</div>';
+    return;
+  }
+
+  html += '<div class="file-grid compact-grid">';
+  html += visible.map(function(item){
     return `
       <div class="file-card">
         <strong>${safe(formatDate(item.date))} • ${safe(item.time)} • Session ${safe(item.session)}</strong>
         <small>${safe(item.note || "Tanpa catatan")}</small>
       </div>
     `;
-  }).join("") : '<div class="empty">Belum ada pertemuan.</div>';
-}
-
-function isBeforeStart(y,m){ return y < START_YEAR || (y === START_YEAR && m < START_MONTH); }
-
-function changeParentMonth(step){
-  currentMonth += step;
-  if(currentMonth < 0){ currentMonth = 11; currentYear--; }
-  if(currentMonth > 11){ currentMonth = 0; currentYear++; }
-  if(isBeforeStart(currentYear,currentMonth)){
-    currentMonth = START_MONTH;
-    currentYear = START_YEAR;
-    showToast("Riwayat mulai dari Mei 2026","error");
-  }
-  renderParentCalendar();
+  }).join("");
+  html += '</div>';
+  getEl("attendanceList").innerHTML = html;
 }
 
 function renderParentCalendar(){

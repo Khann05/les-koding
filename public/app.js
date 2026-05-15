@@ -12,6 +12,7 @@ let editingId = null;
 let selectedDate = "2026-05-01";
 let activeTab = "calendar";
 let library = [];
+let adminSectionExpanded = { access:false, library:false, certificates:false, sessions:false };
 let pptSortMode = "smart";
 
 const currentDate = new Date();
@@ -590,6 +591,22 @@ async function deleteItem(type,id){
   }catch(e){ toast(e.message,"error"); }
 }
 
+
+function toggleAdminSection(section){
+  adminSectionExpanded[section] = !adminSectionExpanded[section];
+  renderDetail();
+}
+function sliceAdminItems(section, items){
+  const arr = Array.isArray(items) ? items : [];
+  return adminSectionExpanded[section] ? arr : arr.slice(0,4);
+}
+function adminSeeAllButton(section, total, visible){
+  const hidden = Math.max(0, total - visible);
+  return '<button class="btn btn-light" onclick="toggleAdminSection(&quot;' + section + '&quot;)">' +
+    (adminSectionExpanded[section] ? "Show Less" : "See All" + (hidden ? " (" + hidden + ")" : "")) +
+    '</button>';
+}
+
 function renderStats(){
   let sessions = 0, cert = 0;
   students.forEach(function(s){
@@ -706,8 +723,18 @@ function renderCalendar(){
 }
 
 function renderSessionsList(s){
-  if(!s.attendances.length) return '<div class="empty">Belum ada absen.</div>';
-  return s.attendances.map(function(sess){
+  const allSessions = s.attendances || [];
+  const visible = sliceAdminItems("sessions", allSessions);
+  let html =
+    '<div class="section-toolbar">' +
+      '<div><div class="title">Riwayat Absen</div><div class="subtitle">Awalnya tampil 4 data agar dashboard tetap rapi.</div></div>' +
+      '<div class="section-actions">' + adminSeeAllButton("sessions", allSessions.length, visible.length) + '</div>' +
+    '</div>';
+
+  if(!allSessions.length) return html + '<div class="empty">Belum ada absen.</div>';
+
+  html += '<div class="file-grid compact-grid">';
+  html += visible.map(function(sess){
     return `
       <div class="file-card">
         <strong>${safe(formatDate(sess.date))} • ${safe(sess.time)} • Session ${safe(sess.session)}</strong>
@@ -716,6 +743,8 @@ function renderSessionsList(s){
       </div>
     `;
   }).join("");
+  html += '</div>';
+  return html;
 }
 
 function groupByCategory(items){
@@ -765,27 +794,23 @@ function setPPTSortMode(mode){
 
 function renderAccess(){
   const list = sortPPTItems(selectedStudent.library || []);
+  const visible = sliceAdminItems("access", list);
   if(!list.length){
     $("tabContent").innerHTML = '<div class="empty">Library PPT masih kosong. Klik Upload PPT Global dulu.</div>';
     return;
   }
-
-  const groups = groupByCategory(list);
+  const groups = groupByCategory(visible);
   let html = `
-    <div class="panel-head">
-      <div>
-        <div class="title">Unlock PPT untuk ${safe(selectedStudent.name)}</div>
-        <div class="subtitle">Default: file unlocked urut upload, locked otomatis ke bawah. Sort All: semua file urut upload asli, locked tidak dipindah.</div>
-      </div>
-      <div class="row-actions">
+    <div class="section-toolbar">
+      <div><div class="title">Unlock PPT untuk ${safe(selectedStudent.name)}</div><div class="subtitle">Default: unlocked di atas, locked otomatis ke bawah. Sort All: urut upload asli.</div></div>
+      <div class="section-actions">
         <button class="btn ${pptSortMode === "smart" ? "btn-primary" : "btn-light"}" onclick="setPPTSortMode('smart')">Default</button>
         <button class="btn ${pptSortMode === "all" ? "btn-primary" : "btn-light"}" onclick="setPPTSortMode('all')">Sort All</button>
+        ${adminSeeAllButton("access", list.length, visible.length)}
       </div>
-    </div>
-  `;
-
+    </div>`;
   Object.keys(groups).forEach(function(cat){
-    html += `<div class="title" style="margin:16px 0 10px">${safe(cat)}</div><div class="file-grid">`;
+    html += `<div class="title category-title">${safe(cat)}</div><div class="file-grid compact-grid">`;
     html += groups[cat].map(function(item){
       const locked = !item.is_unlocked;
       return `
@@ -797,26 +822,31 @@ function renderAccess(){
             <button class="btn ${locked ? "btn-green" : "btn-orange"}" onclick="toggleMaterialAccess(${item.id},${item.is_unlocked})">${locked ? "Unlock untuk siswa ini" : "Lock lagi"}</button>
             ${item.file_path ? `<a class="btn btn-blue" href="${safe(item.file_path)}" download>Download Admin</a>` : ""}
           </div>
-        </div>
-      `;
+        </div>`;
     }).join("");
     html += "</div>";
   });
-
   $("tabContent").innerHTML = html;
 }
 
 function renderLibrary(){
-  if(!library.length){
+  const list = sortLibraryItems(library || []);
+  const visible = sliceAdminItems("library", list);
+  if(!list.length){
     $("tabContent").innerHTML = '<div class="empty">Belum ada PPT global. Klik Upload PPT Global.</div>';
     return;
   }
-
-  const groups = groupByCategory(sortLibraryItems(library));
-  let html = `<div class="panel-head"><div><div class="title">Library PPT Global</div><div class="subtitle">Ini master PPT untuk semua siswa. Parent melihat semua list, tapi akses download per siswa diatur dari tab Unlock PPT Siswa.</div></div><button class="btn btn-green" onclick="openLibraryModal()">Upload PPT Global</button></div>`;
-
+  const groups = groupByCategory(visible);
+  let html = `
+    <div class="section-toolbar">
+      <div><div class="title">Library PPT Global</div><div class="subtitle">Master PPT untuk semua siswa. Awalnya tampil 4 data agar tidak terlalu panjang.</div></div>
+      <div class="section-actions">
+        <button class="btn btn-green" onclick="openLibraryModal()">Upload PPT Global</button>
+        ${adminSeeAllButton("library", list.length, visible.length)}
+      </div>
+    </div>`;
   Object.keys(groups).forEach(function(cat){
-    html += `<div class="title" style="margin:16px 0 10px">${safe(cat)}</div><div class="file-grid">`;
+    html += `<div class="title category-title">${safe(cat)}</div><div class="file-grid compact-grid">`;
     html += groups[cat].map(function(item){
       return `
         <div class="file-card">
@@ -827,29 +857,30 @@ function renderLibrary(){
             ${item.file_path ? `<a class="btn btn-blue" href="${safe(item.file_path)}" download>Download</a>` : ""}
             <button class="btn btn-red" onclick="deleteLibraryMaterial(${item.id})">Hapus dari Library</button>
           </div>
-        </div>
-      `;
+        </div>`;
     }).join("");
     html += "</div>";
   });
-
   $("tabContent").innerHTML = html;
 }
 
 function renderCertificates(){
   const s = selectedStudent;
+  const list = s.certificates || [];
+  const visible = sliceAdminItems("certificates", list);
   let html = `
-    <div class="panel-head">
-      <div><div class="title">Sertifikat Digital ${safe(s.name)}</div><div class="subtitle">Sertifikat khusus siswa ini.</div></div>
-      <button class="btn btn-purple" onclick="openCertificateModal()">Upload Sertifikat</button>
-    </div>
-    <div class="file-grid">
-  `;
-
-  if(!s.certificates.length){
+    <div class="section-toolbar">
+      <div><div class="title">Sertifikat Digital ${safe(s.name)}</div><div class="subtitle">Sertifikat khusus siswa ini. Awalnya tampil 4 data agar lebih rapi.</div></div>
+      <div class="section-actions">
+        <button class="btn btn-purple" onclick="openCertificateModal()">Upload Sertifikat</button>
+        ${adminSeeAllButton("certificates", list.length, visible.length)}
+      </div>
+    </div>`;
+  if(!list.length){
     html += '<div class="empty">Belum ada sertifikat.</div>';
   }else{
-    html += s.certificates.map(function(item){
+    html += '<div class="file-grid compact-grid">';
+    html += visible.map(function(item){
       const locked = !!item.is_locked;
       return `
         <div class="file-card">
@@ -861,12 +892,10 @@ function renderCertificates(){
             <button class="btn btn-orange" onclick="toggleCertificateLock(${item.id},${item.is_locked})">${locked ? "Unlock" : "Lock"}</button>
             <button class="btn btn-red" onclick="deleteItem('certificate',${item.id})">Hapus</button>
           </div>
-        </div>
-      `;
+        </div>`;
     }).join("");
+    html += '</div>';
   }
-
-  html += "</div>";
   $("tabContent").innerHTML = html;
 }
 
